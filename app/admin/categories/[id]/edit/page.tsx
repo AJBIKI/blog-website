@@ -4,19 +4,20 @@ import connectToDatabase from '@/lib/db';
 import Category from '@/models/Category';
 import CategoryForm from '@/components/forms/CategoryForm';
 import { updateCategoryAction } from '@/lib/actions';
-
-interface CategoryType {
-  _id: string;
-  name: string;
-}
+import { LeanCategory } from '@/types/database';
 
 async function getCategory(id: string) {
   try {
     await connectToDatabase();
-    const category = await Category.findById(id).select('name _id').lean();
-    if (!category) {
+    const categoryResult = await Category.findById(id)
+      .select('_id name')
+      .lean();
+
+    if (!categoryResult) {
       return { category: null, error: 'Category not found.' };
     }
+    
+    const category = categoryResult as unknown as LeanCategory;
     return {
       category: JSON.parse(JSON.stringify(category)),
       error: null,
@@ -27,13 +28,19 @@ async function getCategory(id: string) {
   }
 }
 
-export default async function EditCategoryPage({ params }: { params: { id: string } }) {
+// export default async function EditCategoryPage({ params }: { params: { id: string } })
+
+export default async function EditCategoryPage({ params }: { params: Promise<{ id: string }> })
+
+{
   const user = await getCurrentUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  const { category, error } = await getCategory(params.id);
+  const { id } = await params;
+const { category, error } = await getCategory(id);
+  // const { category, error } = await getCategory(await id);
 
   if (!category || error) {
     redirect('/admin/categories');
@@ -46,7 +53,7 @@ export default async function EditCategoryPage({ params }: { params: { id: strin
         <p className="text-red-500">{error}</p>
       ) : (
         <CategoryForm
-          action={updateCategoryAction.bind(null, params.id)}
+          action={updateCategoryAction.bind(null, id)}
           submitLabel="Update Category"
           initialValues={{ name: category.name }}
         />

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { uploadImageToCloudinary } from '@/lib/cloudinaryUpload';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { PostFormCategory, PostFormTag } from '@/types/database';
 
 // shadcn/ui imports
 import { Button } from '@/components/ui/button';
@@ -38,10 +39,10 @@ const postSchema = z.object({
 
 type PostFormValues = z.infer<typeof postSchema>;
 
-// --- Component Props (Unchanged) ---
+// --- Component Props ---
 interface PostFormProps {
-  categories: { _id: string; name: string }[];
-  tags: { _id: string; name: string }[];
+  categories: PostFormCategory[];
+  tags: PostFormTag[];
   action: (formData: FormData) => Promise<{ success: boolean; message: string; redirect?: string }>;
   submitLabel: string;
   defaultValues?: Partial<PostFormValues>;

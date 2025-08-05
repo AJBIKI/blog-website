@@ -220,9 +220,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/getCurrentUser';
-import { deletePostAction } from '@/lib/actions';
 import connectToDatabase from '@/lib/db';
 import Post from '@/models/Post';
+import { revalidatePath } from 'next/cache';
 
 interface PostType {
   _id: string;
@@ -294,7 +294,7 @@ export default async function PostsPage() {
               </thead>
               <tbody className="text-gray-700">
                 {posts.length > 0 ? (
-                  posts.map((post) => (
+                  posts.map((post: PostType) => (
                     <tr key={post._id} className="border-b hover:bg-gray-50">
                       <td className="py-4 px-6 font-medium">{post.title}</td>
                       <td className="py-4 px-6 capitalize">{post.status}</td>
@@ -305,7 +305,21 @@ export default async function PostsPage() {
                           Edit
                         </Link>
                         <form
-                          action={deletePostAction.bind(null, post._id)}
+                          action={async (formData: FormData) => {
+                            'use server';
+                            const user = await getCurrentUser();
+                            if (!user) {
+                              return;
+                            }
+
+                            try {
+                              await connectToDatabase();
+                              await Post.findOneAndDelete({ _id: post._id, author: user.id });
+                              revalidatePath('/admin/posts');
+                            } catch (error) {
+                              console.error('Error deleting post:', error);
+                            }
+                          }}
                           className="inline"
                         >
                           <button

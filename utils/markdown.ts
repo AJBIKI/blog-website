@@ -6,7 +6,7 @@ import DOMPurify from 'isomorphic-dompurify';
  * @param markdown - The markdown string to convert
  * @returns Sanitized HTML string
  */
-export function markdownToHtml(markdown: string): string {
+export async function markdownToHtml(markdown: string): Promise<string> {
   // Configure marked with secure defaults
   marked.setOptions({
     gfm: true,
@@ -14,7 +14,7 @@ export function markdownToHtml(markdown: string): string {
   });
 
   // Convert markdown to HTML
-  const html = marked(markdown);
+  const html = await marked(markdown);
 
   // Sanitize HTML with DOMPurify
   const sanitizedHtml = DOMPurify.sanitize(html, {

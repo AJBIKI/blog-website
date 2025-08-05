@@ -203,34 +203,130 @@
 // }
 
 
+//working just deployment problem
 
-import Link from 'next/link';
+
+// import Link from 'next/link';
+// import { redirect } from 'next/navigation';
+// import { getCurrentUser } from '@/lib/getCurrentUser';
+// import connectToDatabase from '@/lib/db';
+// import Category from '@/models/Category';
+// import { deleteCategoryAction } from '@/lib/actions';
+
+// interface CategoryType {
+//   _id: string;
+//   name: string;
+//   slug: string;
+// }
+
+// async function getCategories() {
+//   try {
+//   await connectToDatabase();
+//   const categories: CategoryType[] = await Category.find().lean(); // Add type annotation
+//     return {
+//       categories: JSON.parse(JSON.stringify(categories)),
+//       error: null,
+//     };
+//   } catch (error) {
+//     console.error('Error fetching categories:', error);
+//     return {
+//       categories: [],
+//       error: 'Failed to load categories. Please try refreshing the page.',
+//     };
+//   }
+// }
+
+// export default async function CategoriesPage() {
+//   const user = await getCurrentUser();
+//   if (!user) {
+//     redirect('/sign-in');
+//   }
+
+//   const { categories, error } = await getCategories();
+
+//   return (
+//     <div className="container mx-auto py-8 px-4">
+//       <div className="flex justify-between items-center mb-6">
+//         <h1 className="text-3xl font-bold">Categories</h1>
+//         <Link
+//           href="/admin/categories/new"
+//           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+//         >
+//           Create New Category
+//         </Link>
+//       </div>
+
+//       {error && <p className="text-red-500">{error}</p>}
+
+//       {!error && (
+//         <div className="bg-white shadow-md rounded-lg overflow-hidden">
+//           <div className="overflow-x-auto">
+//             <table className="min-w-full">
+//               <thead className="bg-gray-50 border-b">
+//                 <tr className="text-gray-600 uppercase text-sm">
+//                   <th className="py-3 px-6 text-left">Name</th>
+//                   <th className="py-3 px-6 text-center">Actions</th>
+//                 </tr>
+//               </thead>
+//               <tbody className="text-gray-700">
+//                 {categories.length > 0 ? (
+//                   categories.map((category) => (
+//                     <tr key={category._id} className="border-b hover:bg-gray-50">
+//                       <td className="py-4 px-6 font-medium">{category.name}</td>
+//                       <td className="py-4 px-6 text-center space-x-4">
+//                         <Link
+//                           href={`/admin/categories/${category._id}/edit`}
+//                           className="text-blue-600 hover:underline"
+//                         >
+//                           Edit
+//                         </Link>
+//                         <form
+//                           action={deleteCategoryAction.bind(null, category._id)}
+//                           className="inline"
+//                         >
+//                           <button
+//                             type="submit"
+//                             className="text-red-600 hover:underline disabled:text-gray-400"
+//                           >
+//                             Delete
+//                           </button>
+//                         </form>
+//                       </td>
+//                     </tr>
+//                   ))
+//                 ) : (
+//                   <tr>
+//                     <td colSpan={2} className="py-6 px-6 text-center text-gray-500">
+//                       No categories found.
+//                     </td>
+//                   </tr>
+//                 )}
+//               </tbody>
+//             </table>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/getCurrentUser';
 import connectToDatabase from '@/lib/db';
 import Category from '@/models/Category';
-import { deleteCategoryAction } from '@/lib/actions';
+import { getCurrentUser } from '@/lib/getCurrentUser';
+import Link from 'next/link';
+import { revalidatePath } from 'next/cache';
+import Post from '@/models/Post';
 
-interface CategoryType {
+// Redefine based on ICategory from app/models/Category.ts
+interface LeanCategoryType {
   _id: string;
-  name: string;
-}
-
-async function getCategories() {
-  try {
-    await connectToDatabase();
-    const categories = await Category.find({}).select('name _id').lean();
-    return {
-      categories: JSON.parse(JSON.stringify(categories)),
-      error: null,
-    };
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return {
-      categories: [],
-      error: 'Failed to load categories. Please try refreshing the page.',
-    };
-  }
+  name?: string;
+  slug?: string;
+  description?: string;
+  __v?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default async function CategoriesPage() {
@@ -239,70 +335,83 @@ export default async function CategoriesPage() {
     redirect('/sign-in');
   }
 
-  const { categories, error } = await getCategories();
+  await connectToDatabase();
+  const categoriesData = await Category.find().select('name slug description createdAt updatedAt').lean();
+  const categories: LeanCategoryType[] = JSON.parse(JSON.stringify(categoriesData));
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Categories</h1>
-        <Link
-          href="/admin/categories/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-        >
-          Create New Category
-        </Link>
-      </div>
+      <h1 className="text-3xl font-bold mb-6">Manage Categories</h1>
+      <Link
+        href="/admin/categories/new"
+        className="mb-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+      >
+        Add New Category
+      </Link>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-gray-200 text-gray-700">
+            <th className="py-3 px-6 text-left">Name</th>
+            <th className="py-3 px-6 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="text-gray-700">
+          {categories.length > 0 ? (
+            categories.map((category) => (
+              <tr key={category._id} className="border-b hover:bg-gray-50">
+                <td className="py-4 px-6 font-medium">{category.name}</td>
+                <td className="py-4 px-6 text-center space-x-4">
+                  <Link
+                    href={`/admin/categories/${category._id}/edit`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Edit
+                  </Link>
+                  <form
+                    action={async (formData: FormData) => {
+                      'use server';
+                      const user = await getCurrentUser();
+                      if (!user) {
+                        return;
+                      }
 
-      {error && <p className="text-red-500">{error}</p>}
+                      try {
+                        await connectToDatabase();
+                        const deletedCategory = await Category.findOneAndDelete({ _id: category._id });
 
-      {!error && (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr className="text-gray-600 uppercase text-sm">
-                  <th className="py-3 px-6 text-left">Name</th>
-                  <th className="py-3 px-6 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-700">
-                {categories.length > 0 ? (
-                  categories.map((category) => (
-                    <tr key={category._id} className="border-b hover:bg-gray-50">
-                      <td className="py-4 px-6 font-medium">{category.name}</td>
-                      <td className="py-4 px-6 text-center space-x-4">
-                        <Link
-                          href={`/admin/categories/${category._id}/edit`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          Edit
-                        </Link>
-                        <form
-                          action={deleteCategoryAction.bind(null, category._id)}
-                          className="inline"
-                        >
-                          <button
-                            type="submit"
-                            className="text-red-600 hover:underline disabled:text-gray-400"
-                          >
-                            Delete
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={2} className="py-6 px-6 text-center text-gray-500">
-                      No categories found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                        if (deletedCategory) {
+                          // Update posts that reference this category to have null category
+                          await Post.updateMany({ category: category._id }, { $set: { category: null } });
+                        }
+
+                        revalidatePath('/admin/categories');
+                        revalidatePath('/admin/posts');
+                        revalidatePath('/blog');
+                      } catch (error) {
+                        console.error('Error deleting category:', error);
+                      }
+                    }}
+                    className="inline"
+                  >
+                    <button
+                      type="submit"
+                      className="text-red-600 hover:underline disabled:text-gray-400"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={2} className="py-4 px-6 text-center">
+                No categories found.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }

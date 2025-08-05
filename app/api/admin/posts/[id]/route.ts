@@ -15,15 +15,16 @@ const postSchema = z.object({
   publishedAt: z.date().nullable(),
 });
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const { userId } = auth();
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }>}) {
+  const { userId } =await  auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const {id}=await params
 
   try {
     await connectToDatabase();
-    const post = await Post.findOne({ _id: params.id, author: userId })
+    const post = await Post.findOne({ _id:id, author: userId })
       .populate('category', 'name slug')
       .populate('tags', 'name slug')
       .lean();
@@ -39,11 +40,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { userId } = auth();
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { userId } =await  auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+    const {id}=await params
 
   try {
     await connectToDatabase();
@@ -71,7 +73,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     };
 
     const updatedPost = await Post.findOneAndUpdate(
-      { _id: params.id, author: userId },
+      { _id: id, author: userId },
       updatePayload,
       { new: true }
     );
@@ -90,15 +92,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const { userId } = auth();
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+    const {id}=await params
 
   try {
     await connectToDatabase();
-    const deletedPost = await Post.findOneAndDelete({ _id: params.id, author: userId });
+    const deletedPost = await Post.findOneAndDelete({ _id:id, author: userId });
 
     if (!deletedPost) {
       return NextResponse.json({ error: 'Post not found or unauthorized' }, { status: 404 });

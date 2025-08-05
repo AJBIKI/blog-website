@@ -1052,7 +1052,7 @@ export default async function BlogPage() {
 
                 {/* Posts Grid */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {posts.map((post, index) => (
+                  {posts.map((post: PostType, index: number) => (
                     <article 
                       key={post._id} 
                       className={`group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-gray-300 ${

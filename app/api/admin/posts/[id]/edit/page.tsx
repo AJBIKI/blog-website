@@ -8,8 +8,9 @@ import PostForm from '@/components/forms/PostForm';
 import { slugify } from '@/lib/slugify';
 import { notFound } from 'next/navigation';
 import { getCurrentUser } from '@/lib/getCurrentUser';
+import { PostFormCategory, PostFormTag, PopulatedPost } from '@/types/database';
 
-export default async function EditPostPage({ params }: { params: { id: string } }) {
+export default async function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
   if (!userId) {
     redirect('/sign-in');
@@ -23,15 +24,21 @@ export default async function EditPostPage({ params }: { params: { id: string } 
 
   await connectToDatabase();
 
+  const {id}=await params
+
   // Fetch post, categories, and tags
-  const [post, categories, tags] = await Promise.all([
-    Post.findOne({ slug: params.id })
+  const [postResult, categoriesResult, tagsResult] = await Promise.all([
+    Post.findOne({ slug: id })
       .populate('category', 'name slug')
       .populate('tags', 'name slug')
       .lean(),
-    Category.find().select('name slug').lean(),
-    Tag.find().select('name slug').lean(),
+    Category.find().select('_id name').lean(),
+    Tag.find().select('_id name').lean(),
   ]);
+
+  const post = postResult as unknown as PopulatedPost | null;
+  const categories = categoriesResult as unknown as PostFormCategory[];
+  const tags = tagsResult as unknown as PostFormTag[];
 
   if (!post) {
     notFound();
@@ -52,7 +59,7 @@ export default async function EditPostPage({ params }: { params: { id: string } 
       const coverImage = formData.get('coverImage') as string | null;
 
       const updatedPost = await Post.findOneAndUpdate(
-        { slug: params.id },
+        { slug:id },
         {
           title,
           slug: slugify(title),

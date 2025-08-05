@@ -4,19 +4,17 @@ import connectToDatabase from '@/lib/db';
 import Tag from '@/models/Tag';
 import TagForm from '@/components/forms/TagForm';
 import { updateTagAction } from '@/lib/actions';
-
-interface TagType {
-  _id: string;
-  name: string;
-}
+import { LeanTag } from '@/types/database';
 
 async function getTag(id: string) {
   try {
     await connectToDatabase();
-    const tag = await Tag.findById(id).select('name _id').lean();
-    if (!tag) {
+    const tagResult = await Tag.findById(id).select('_id name').lean();
+    if (!tagResult) {
       return { tag: null, error: 'Tag not found.' };
     }
+    
+    const tag = tagResult as unknown as LeanTag;
     return {
       tag: JSON.parse(JSON.stringify(tag)),
       error: null,
@@ -27,13 +25,18 @@ async function getTag(id: string) {
   }
 }
 
-export default async function EditTagPage({ params }: { params: { id: string } }) {
+// export default async function EditTagPage({ params }: { params: { id: string } })
+
+export default async function EditTagPage({ params }: { params: Promise<{ id: string }> })
+
+{
   const user = await getCurrentUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  const { tag, error } = await getTag(params.id);
+   const { id } = await params;
+  const { tag, error } = await getTag(id);
 
   if (!tag || error) {
     redirect('/admin/tags');
@@ -46,7 +49,7 @@ export default async function EditTagPage({ params }: { params: { id: string } }
         <p className="text-red-500">{error}</p>
       ) : (
         <TagForm
-          action={updateTagAction.bind(null, params.id)}
+          action={updateTagAction.bind(null, id)}
           submitLabel="Update Tag"
           initialValues={{ name: tag.name }}
         />

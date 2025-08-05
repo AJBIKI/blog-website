@@ -1302,18 +1302,49 @@ export async function createTagAction(formData: FormData) {
   }
 }
 
-export async function deleteTagAction(tagId: string) {
+// export async function deleteTagAction(tagId: string) {
+//   const user = await getCurrentUser();
+//   if (!user) {
+//     return { success: false, message: 'Unauthorized: You must be logged in.' };
+//   }
+
+//   try {
+//     await connectToDatabase();
+//     const deletedTag = await Tag.findOneAndDelete({ _id: tagId });
+
+//     if (!deletedTag) {
+//       return { success: false, message: 'Tag not found.' };
+//     }
+
+//     await Post.updateMany({ tags: tagId }, { $pull: { tags: tagId } });
+
+//     revalidatePath('/admin/tags');
+//     revalidatePath('/admin/posts');
+//     revalidatePath('/blog');
+//     return { success: true, message: 'Tag deleted successfully.' };
+//   } catch (error) {
+//     console.error('Error deleting tag:', error);
+//     return { success: false, message: 'An unexpected error occurred while deleting the tag.' };
+//   }
+// }
+
+
+export async function deleteTagAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) {
-    return { success: false, message: 'Unauthorized: You must be logged in.' };
+    console.error('Unauthorized: You must be logged in.');
+    return;
   }
+
+  const tagId = formData.get('tagId') as string;
 
   try {
     await connectToDatabase();
     const deletedTag = await Tag.findOneAndDelete({ _id: tagId });
 
     if (!deletedTag) {
-      return { success: false, message: 'Tag not found.' };
+      console.error('Tag not found.');
+      return;
     }
 
     await Post.updateMany({ tags: tagId }, { $pull: { tags: tagId } });
@@ -1321,10 +1352,8 @@ export async function deleteTagAction(tagId: string) {
     revalidatePath('/admin/tags');
     revalidatePath('/admin/posts');
     revalidatePath('/blog');
-    return { success: true, message: 'Tag deleted successfully.' };
   } catch (error) {
     console.error('Error deleting tag:', error);
-    return { success: false, message: 'An unexpected error occurred while deleting the tag.' };
   }
 }
 

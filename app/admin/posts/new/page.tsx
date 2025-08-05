@@ -167,24 +167,19 @@ import Category from '@/models/Category';
 import Tag from '@/models/Tag';
 import PostForm from '@/components/forms/PostForm';
 import { createPostAction } from '@/lib/actions';
-
-interface CategoryType {
-  _id: string;
-  name: string;
-}
-
-interface TagType {
-  _id: string;
-  name: string;
-}
+import { PostFormCategory, PostFormTag } from '@/types/database';
 
 async function getCategoriesAndTags() {
   try {
     await connectToDatabase();
-    const [categories, tags] = await Promise.all([
-      Category.find({}).select('name _id').lean(),
-      Tag.find({}).select('name _id').lean(),
+    const [categoriesResult, tagsResult] = await Promise.all([
+      Category.find({}).select('_id name').lean(),
+      Tag.find({}).select('_id name').lean(),
     ]);
+    
+    const categories = categoriesResult as unknown as PostFormCategory[];
+    const tags = tagsResult as unknown as PostFormTag[];
+    
     return {
       categories: JSON.parse(JSON.stringify(categories)),
       tags: JSON.parse(JSON.stringify(tags)),
@@ -193,8 +188,8 @@ async function getCategoriesAndTags() {
   } catch (error) {
     console.error('Error fetching categories or tags:', error);
     return {
-      categories: [],
-      tags: [],
+      categories: [] as PostFormCategory[],
+      tags: [] as PostFormTag[],
       error: 'Failed to fetch categories or tags. Please try refreshing the page.',
     };
   }

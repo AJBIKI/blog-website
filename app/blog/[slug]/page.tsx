@@ -143,8 +143,11 @@ async function getPost(slug: string): Promise<PopulatedPost | null> {
 
 
 // --- Metadata Generation ---
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-    const post = await getPost(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    
+    
+     const {slug}=await params
+    const post = await getPost(slug);
 
     if (!post) {
         return {
@@ -171,15 +174,17 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 
 // --- Main Page Component ---
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-    const post = await getPost(params.slug);
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+     const { slug } = await params;
+    const post = await getPost(slug);
 
     if (!post) {
         notFound();
     }
 
     // FIX: Sanitize the HTML content after parsing from Markdown to prevent XSS.
-    const sanitizedHtmlContent = DOMPurify.sanitize(marked(post.content));
+    const htmlContent = await marked(post.content);
+    const sanitizedHtmlContent = DOMPurify.sanitize(htmlContent);
 
     return (
         <article className="bg-white dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">

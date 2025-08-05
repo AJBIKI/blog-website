@@ -4,11 +4,12 @@ import  connectToDatabase  from '@/lib/db';
 import Tag from '@/models/Tag';
 import { slugify } from '@/lib/slugify';
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { userId } =await  auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+   const {id}=await params
 
   try {
     await connectToDatabase();
@@ -25,7 +26,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     // Check for existing tag with same name
-    const existingTag = await Tag.findOne({ name, _id: { $ne: params.id } });
+    const existingTag = await Tag.findOne({ name, _id: { $ne:id} });
     if (existingTag) {
       return NextResponse.json(
         { error: 'Tag name already exists' },
@@ -34,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const updatedTag = await Tag.findByIdAndUpdate(
-      params.id,
+     id,
       {
         name,
         slug: slugify(name),
@@ -59,16 +60,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const { userId } = auth();
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { userId } =await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+   const {id}=await params
 
   try {
     await connectToDatabase();
 
-    const deletedTag = await Tag.findByIdAndDelete(params.id);
+    const deletedTag = await Tag.findByIdAndDelete(id);
 
     if (!deletedTag) {
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
